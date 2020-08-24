@@ -1,13 +1,11 @@
 package edu.uiowa.smt.optimizer;
 
+import edu.uiowa.alloy2smt.utils.AlloyUtils;
 import edu.uiowa.smt.AbstractTranslator;
 import edu.uiowa.smt.TranslatorUtils;
 import edu.uiowa.smt.smtAst.*;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SmtRewriter implements ISmtRewriter
@@ -328,12 +326,160 @@ public class SmtRewriter implements ISmtRewriter
   {
     SmtRewriteResult bodyResult = visit(smtQtExpr.getExpr());
     SmtQtExpr smtAst = smtQtExpr.getOp().make((SmtExpr) bodyResult.smtAst, smtQtExpr.getVariables());
-    SmtRewriteResult result = optimizeTupleQuantifiers(smtAst);
-    if (result.status == SmtRewriteResult.Status.RewriteAgain)
+    SmtRewriteResult result1 = optimizeTupleQuantifiers(smtAst);
+    SmtRewriteResult result2 = optimizeArithmeticOperations((SmtExpr) result1.smtAst);
+    if (result1.status == SmtRewriteResult.Status.RewriteAgain ||
+        result2.status == SmtRewriteResult.Status.RewriteAgain
+    )
     {
-      return result;
+      return SmtRewriteResult.Status.RewriteAgain.make(result2.smtAst);
     }
-    return bodyResult.status.make(result.smtAst);
+    return SmtRewriteResult.Status.Done.make(result1.smtAst);
+  }
+
+  private SmtRewriteResult optimizeArithmeticOperations(SmtExpr expr)
+  {
+    //Optimize expression C = plus[A, B]
+    //(exists ((s (Set (Tuple UInt))))
+    //     (and
+    //       (forall ((z UInt))
+    //         (=>
+    //           (member (mkTuple z) s)
+    //           (exists ((x UInt)(y UInt))
+    //             (and
+    //               (= (+ (intValue x) (intValue y)) (intValue z))
+    //               (member (mkTuple x) A)
+    //               (member (mkTuple y) B)))))
+    //       (forall ((x UInt)(y UInt))
+    //         (=>
+    //           (and (member (mkTuple x) A)
+    //             (member (mkTuple y) B))
+    //           (exists ((z UInt))
+    //             (and
+    //               (= (+ (intValue x) (intValue y)) (intValue z))
+    //               (member (mkTuple z) s)))))
+    //       (= C s)))
+    // optimized: if A and B are singletons
+    //       (exists ((z UInt))
+    //         (and
+    //           (= (singleton (mkTuple z)) C)
+    //           (exists ((x UInt)(y UInt))
+    //             (and
+    //               (= (+ (intValue x) (intValue y)) (intValue z))
+    //               (= (singleton (mkTuple x)) A)
+    //               (= (singleton (mkTuple y)) B)))))
+
+    if(! AlloyUtils.alloySettings.integerSingletonsOnly)
+    {
+      return SmtRewriteResult.Status.Done.make(expr);
+    }
+
+    if (!(expr instanceof SmtQtExpr &&
+        ((SmtQtExpr) expr).getOp() == SmtQtExpr.Op.EXISTS &&
+        ((SmtQtExpr) expr).getVariables().size() == 1 &&
+        ((SmtQtExpr) expr).getVariables().get(0).getSort().equals(AbstractTranslator.setOfUninterpretedIntTuple) &&
+        ((SmtQtExpr) expr).getExpr() instanceof SmtMultiArityExpr &&
+        ((SmtMultiArityExpr) ((SmtQtExpr) expr).getExpr()).getOp() == SmtMultiArityExpr.Op.AND
+    ))
+    {
+      return SmtRewriteResult.Status.Done.make(expr);
+    }
+
+    SmtVariable s = ((SmtQtExpr) expr).getVariables().get(0);
+
+    SmtMultiArityExpr and1 = (SmtMultiArityExpr) ((SmtQtExpr) expr).getExpr();
+
+    if (!(and1.getExprs().size() == 3 &&
+        and1.get(0) instanceof SmtQtExpr &&
+        ((SmtQtExpr) and1.get(0)).getOp() == SmtQtExpr.Op.FORALL &&
+        ((SmtQtExpr) and1.get(0)).getVariables().size() == 1 &&
+        ((SmtQtExpr) and1.get(0)).getExpr() instanceof SmtBinaryExpr &&
+        ((SmtBinaryExpr) ((SmtQtExpr) and1.get(0)).getExpr()).getOp() == SmtBinaryExpr.Op.IMPLIES &&
+        and1.get(1) instanceof SmtQtExpr &&
+        ((SmtQtExpr) and1.get(1)).getOp() == SmtQtExpr.Op.FORALL &&
+        ((SmtQtExpr) and1.get(1)).getVariables().size() == 2 &&
+        ((SmtQtExpr) and1.get(1)).getExpr() instanceof SmtBinaryExpr &&
+        ((SmtBinaryExpr) ((SmtQtExpr) and1.get(1)).getExpr()).getOp() == SmtBinaryExpr.Op.IMPLIES &&
+        and1.get(2) instanceof SmtBinaryExpr &&
+        ((SmtBinaryExpr) and1.get(2)).getOp() == SmtBinaryExpr.Op.EQ &&
+        ((SmtBinaryExpr) and1.get(2)).getB().equals(s.getVariable())
+    ))
+    {
+      return SmtRewriteResult.Status.Done.make(expr);
+    }
+
+    SmtVariable z = ((SmtQtExpr) and1.get(0)).getVariables().get(0);
+    SmtExpr C = ((SmtBinaryExpr) and1.get(2)).getA();
+    SmtBinaryExpr implies1 = (SmtBinaryExpr) ((SmtQtExpr) and1.get(0)).getExpr();
+    if (!implies1.getA().equals(z.getVariable().mkTuple().member(s.getVariable())))
+    {
+      return SmtRewriteResult.Status.Done.make(expr);
+    }
+    if (!(implies1.getB() instanceof SmtQtExpr &&
+        ((SmtQtExpr) implies1.getB()).getVariables().size() == 2 &&
+        ((SmtQtExpr) implies1.getB()).getOp() == SmtQtExpr.Op.EXISTS &&
+        ((SmtQtExpr) implies1.getB()).getExpr() instanceof SmtMultiArityExpr &&
+        ((SmtMultiArityExpr) ((SmtQtExpr) implies1.getB()).getExpr()).getOp() == SmtMultiArityExpr.Op.AND &&
+        ((SmtMultiArityExpr) ((SmtQtExpr) implies1.getB()).getExpr()).getExprs().size() == 3
+    ))
+    {
+      return SmtRewriteResult.Status.Done.make(expr);
+    }
+
+    SmtVariable x = ((SmtQtExpr) implies1.getB()).getVariables().get(0);
+    SmtVariable y = ((SmtQtExpr) implies1.getB()).getVariables().get(1);
+
+    SmtExpr xValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, x.getVariable());
+    SmtExpr yValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, y.getVariable());
+    SmtExpr zValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, z.getVariable());
+
+    SmtMultiArityExpr and2 = ((SmtMultiArityExpr) ((SmtQtExpr) implies1.getB()).getExpr());
+
+    if (!(and2.get(0) instanceof SmtBinaryExpr &&
+        ((SmtBinaryExpr) and2.get(0)).getOp() == SmtBinaryExpr.Op.EQ &&
+        ((SmtBinaryExpr) and2.get(0)).getA() instanceof SmtBinaryExpr &&
+        ((SmtBinaryExpr)((SmtBinaryExpr) and2.get(0)).getA()).getOp().isArithmetic() &&
+        ((SmtBinaryExpr)((SmtBinaryExpr) and2.get(0)).getA()).getOp().make(xValue, yValue).eq(zValue)
+                                                             .equals(and2.get(0)) &&
+        and2.get(1) instanceof SmtBinaryExpr &&
+        ((SmtBinaryExpr) and2.get(1)).getOp() == SmtBinaryExpr.Op.MEMBER &&
+        ((SmtBinaryExpr) and2.get(1)).getA().equals(x.getVariable().mkTuple()) &&
+        and2.get(2) instanceof SmtBinaryExpr &&
+        ((SmtBinaryExpr) and2.get(2)).getOp() == SmtBinaryExpr.Op.MEMBER &&
+        ((SmtBinaryExpr) and2.get(2)).getA().equals(y.getVariable().mkTuple())
+    ))
+    {
+      return SmtRewriteResult.Status.Done.make(expr);
+    }
+
+    SmtExpr equal = ((SmtBinaryExpr)((SmtBinaryExpr) and2.get(0)).getA()).getOp().make(xValue, yValue).eq(zValue);
+    SmtExpr A = ((SmtBinaryExpr) and2.get(1)).getB();
+    SmtExpr B = ((SmtBinaryExpr) and2.get(2)).getB();
+
+    SmtExpr exists = SmtQtExpr.Op.EXISTS.make(equal.and(z.getVariable().mkTuple().member(s.getVariable())),z);
+    SmtExpr implies2 = x.getVariable().mkTuple().member(A).and(y.getVariable().mkTuple().member(B)).implies(exists);
+    SmtExpr forall = SmtQtExpr.Op.FORALL.make(implies2, x, y);
+
+    if(!and1.get(1).equals(forall))
+    {
+      return SmtRewriteResult.Status.Done.make(expr);
+    }
+
+    // optimized: if A and B are singletons
+    //       (exists ((z UInt))
+    //         (and
+    //           (= (singleton (mkTuple z)) C)
+    //           (exists ((x UInt)(y UInt))
+    //             (and
+    //               (= (+ (intValue x) (intValue y)) (intValue z))
+    //               (= (singleton (mkTuple x)) A)
+    //               (= (singleton (mkTuple y)) B)))))
+
+    SmtExpr and3 = equal.and(x.getVariable().mkTuple().singleton().eq(A), y.getVariable().mkTuple().singleton().eq(B));
+    SmtExpr xyExists = SmtQtExpr.Op.EXISTS.make(and3, x, y);
+    SmtExpr and4 = z.getVariable().mkTuple().singleton().eq(C).and(xyExists);
+    SmtExpr zExists = SmtQtExpr.Op.EXISTS.make(and4, z);
+    return SmtRewriteResult.Status.RewriteAgain.make(zExists);
   }
 
   public SmtRewriteResult optimizeTupleQuantifiers(SmtQtExpr smtQtExpr)

@@ -136,4 +136,14 @@ class SmtOptimizerTests
     List<CommandResult> commandResults = AlloyUtils.runAlloyString(alloy, false);
     assertEquals("sat", commandResults.get(0).satResult);
   }
+
+  @Test
+  public void plus() throws Exception
+  {
+    String alloy = "one sig A, B, C in Int {}\n" +
+        "fact {not(C = plus[A, B])}";
+
+    List<CommandResult> commandResults = AlloyUtils.runAlloyString(alloy, false);
+    assertEquals("sat", commandResults.get(0).satResult);
+  }
 }

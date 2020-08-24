@@ -451,6 +451,7 @@ public class CourseExamplesTests
   @Test
   public void bank_account_0() throws Exception
   {
+    AlloyUtils.alloySettings.integerSingletonsOnly = true;
     CommandResult result = AlloyUtils.runAlloyFile("./test/course/bank_account.als", false, 0);
     assertEquals("unsat", result.satResult);
   }

@@ -11,6 +11,7 @@ package edu.uiowa.smt.smtAst;
 import edu.uiowa.smt.AbstractTranslator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -275,6 +276,11 @@ public class SmtBinaryExpr extends SmtExpr
     public String toString()
     {
       return this.opStr;
+    }
+
+    public boolean isArithmetic()
+    {
+      return Arrays.asList(PLUS, MINUS, MULTIPLY, DIVIDE, MOD).contains(this);
     }
   }
 

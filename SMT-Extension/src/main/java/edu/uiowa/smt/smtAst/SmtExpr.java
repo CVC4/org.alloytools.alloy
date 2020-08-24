@@ -10,6 +10,8 @@ package edu.uiowa.smt.smtAst;
 
 import edu.uiowa.smt.printers.SmtLibPrinter;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +55,11 @@ public abstract class SmtExpr extends SmtAst
   public abstract SmtExpr replace(SmtExpr oldSmtExpr, SmtExpr newSmtExpr);
 
   public abstract boolean containsExpr(SmtExpr expr);
+
+  public SmtBinaryExpr eq(SmtExpr expr)
+  {
+    return SmtBinaryExpr.Op.EQ.make(this, expr);
+  }
 
   public SmtBinaryExpr implies(SmtExpr expr)
   {
@@ -112,5 +119,26 @@ public abstract class SmtExpr extends SmtAst
   public SmtUnaryExpr not()
   {
     return SmtUnaryExpr.Op.NOT.make(this);
+  }
+
+//  public SmtMultiArityExpr mkTuple()
+//  {
+//    return mkTuple(this);
+//  }
+
+  public SmtMultiArityExpr mkTuple(SmtExpr...exprs)
+  {
+    List<SmtExpr> smtExprs = new ArrayList<>();
+    smtExprs.add(this);
+    smtExprs.addAll(Arrays.asList(exprs));
+    return SmtMultiArityExpr.Op.MKTUPLE.make(smtExprs);
+  }
+
+  public SmtMultiArityExpr and(SmtExpr...exprs)
+  {
+    List<SmtExpr> smtExprs = new ArrayList<>();
+    smtExprs.add(this);
+    smtExprs.addAll(Arrays.asList(exprs));
+    return SmtMultiArityExpr.Op.AND.make(smtExprs);
   }
 }
