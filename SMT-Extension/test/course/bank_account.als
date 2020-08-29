@@ -48,7 +48,7 @@ pred init [t: Time]
 
 pred someTransaction[t, t': Time]
 {
-  some amount : Int | deposit[t, t', amount] or withdraw[t, t', amount]
+  some amount : Int | deposit[t, t', amount] iff not withdraw[t, t', amount]
 }
 
 
@@ -57,6 +57,8 @@ pred system
   init[0]
   all t': Time - 0 |  let t = minus[t',1]  | someTransaction[t, t']
 }
+
+fact {system}
 
 run scenario1
 {

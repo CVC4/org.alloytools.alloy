@@ -109,9 +109,10 @@
    (let ((amount    (mkTuple x)))
      (and
         (member amount univInt)
-        (or
-            (|this/deposit | |t|  |t'| amount))
-            (|this/withdraw | |t| |t'| amount)))))
+        (=
+            (|this/deposit | |t|  |t'| amount)
+            (not (|this/withdraw | |t| |t'| amount))
+            )))))
 
 (define-fun |this/system | () Bool
  (and
@@ -127,6 +128,7 @@
                 (= (- (intValue u) (intValue one)) (intValue t))
                 (|this/someTransaction | (mkTuple t) |t'|))))))))
 
+(assert |this/system |)
 
 ; one this/BankAccount
 (assert
@@ -384,6 +386,7 @@
 (assert
  (= (intValue zero) 0))
 
+(push 1)
 ; assert sanity
 ; {
 ;     all  t': Time - 0, a : univInt |
@@ -412,4 +415,4 @@
                     (intValue ((_ tupSel 0) (|this/balanceValue | (mkTuple |t'|))))
                     (intValue ((_ tupSel 0) (|this/balanceValue | (mkTuple |t| ))))))))))))
 (check-sat)
-
+(pop 1)
