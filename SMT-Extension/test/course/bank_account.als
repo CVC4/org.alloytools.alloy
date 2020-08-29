@@ -1,5 +1,5 @@
 sig Time in Int {}
-fact positive {all t: Time | t >= 0}
+fact nonNegative {all t: Time | t >= 0}
 fact noGaps {all t: Time - 0 | minus[t,1] in Time }
 one sig BankAccount
 {

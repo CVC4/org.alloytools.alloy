@@ -16,305 +16,124 @@
 (declare-fun |this/Time | () (Set (Tuple UInt)))
 (declare-fun |this/BankAccount | () (Set (Tuple Atom)))
 (declare-fun |integer/univInt | () (Set (Tuple UInt)))
-(declare-fun a.1 () Atom)
+(declare-fun accountAtom () Atom)
 (declare-fun |this/BankAccount/deposit | () (Set (Tuple Atom UInt UInt)))
 (declare-fun |this/BankAccount/withdrawal | () (Set (Tuple Atom UInt UInt)))
 (declare-fun |this/BankAccount/balance | () (Set (Tuple Atom UInt UInt)))
-(declare-fun u.9_0 () UInt)
-(declare-fun u.11_1 () UInt)
-(define-fun |this/depositValue | ((tTuple (Set (Tuple UInt)))) (Set (Tuple UInt))
-
+(declare-fun zero () UInt)
+(declare-fun one () UInt)
+(define-fun |this/depositValue | ((|t| (Tuple UInt))) (Tuple UInt)
+ (choose
  (join
    (join |this/BankAccount |; this/BankAccount
      |this/BankAccount/deposit |; (this/BankAccount <: deposit)
-    ) tTuple; t
-  ))
-(define-fun |this/withdrawalValue | ((tTuple (Set (Tuple UInt)))) (Set (Tuple UInt))
-
+    ) (singleton |t|); t
+  )))
+(define-fun |this/withdrawalValue | ((|t| (Tuple UInt))) (Tuple UInt)
+(choose
  (join
    (join |this/BankAccount |; this/BankAccount
      |this/BankAccount/withdrawal |; (this/BankAccount <: withdrawal)
-    ) tTuple; t
-  ))
-(define-fun |this/balanceValue | ((tTuple (Set (Tuple UInt)))) (Set (Tuple UInt))
-
+    ) (singleton |t|); t
+  )))
+(define-fun |this/balanceValue | ((|t| (Tuple UInt))) (Tuple UInt)
+(choose
  (join
    (join |this/BankAccount |; this/BankAccount
      |this/BankAccount/balance |; (this/BankAccount <: balance)
-    ) tTuple; t
-  ))
-(define-fun |this/deposit | ((tTuple (Set (Tuple UInt)))(uTuple (Set (Tuple UInt)))(|amount | (Set (Tuple UInt)))) Bool
-
+    ) (singleton |t|); t
+  )))
+(define-fun |this/deposit | ((|t| (Tuple UInt))(|t'|  (Tuple UInt))(amount (Tuple UInt))) Bool
  (and
-   (exists ((x UInt)(y UInt))
-     (and
-       (=
-         (singleton
-           (mkTuple x)) |amount |; int[amount]
-        )
-       (=
-         (singleton
-           (mkTuple y))
-         (singleton
-           (mkTuple u.9_0)))
-       (> (intValue x) (intValue y))))
-   (= (|this/depositValue | uTuple; t'
-    ) |amount |; int[amount]
-    )
-   (= (|this/withdrawalValue | uTuple; t'
-    )
-     (singleton
-       (mkTuple u.9_0)))
+    (> (intValue ((_ tupSel 0) amount)) (intValue zero))
+    (= (|this/depositValue | |t'|) amount)
+    (= (|this/withdrawalValue | |t'|)  (mkTuple zero))
    (exists ((z UInt))
      (and
-       (=
-         (singleton
-           (mkTuple z)) (|this/balanceValue | uTuple; t'
-        ))
+       (= (mkTuple z) (|this/balanceValue | |t'|))
        (exists ((x UInt)(y UInt))
          (and
-           (=
-             (+ (intValue x) (intValue y)) (intValue z))
-           (=
-             (singleton
-               (mkTuple x)) (|this/balanceValue | tTuple; t
-            ))
-           (=
-             (singleton
-               (mkTuple y)) |amount |; int[amount]
-            )))))))
-(define-fun |this/withdraw | ((tTuple (Set (Tuple UInt)))(uTuple (Set (Tuple UInt)))(|amount | (Set (Tuple UInt)))) Bool
+           (= (+ (intValue x) (intValue y)) (intValue z))
+           (= (mkTuple x) (|this/balanceValue | |t|))
+           (= (mkTuple y) amount )))))))
 
+(define-fun |this/withdraw | ((|t| (Tuple UInt))(|t'|  (Tuple UInt))(amount (Tuple UInt))) Bool
  (and
+   (> (intValue ((_ tupSel 0) amount)) (intValue zero))
    (exists ((x UInt)(y UInt))
      (and
-       (=
-         (singleton
-           (mkTuple x)) |amount |; int[amount]
-        )
-       (=
-         (singleton
-           (mkTuple y))
-         (singleton
-           (mkTuple u.9_0)))
-       (> (intValue x) (intValue y))))
-   (exists ((x UInt)(y UInt))
-     (and
-       (=
-         (singleton
-           (mkTuple x)) (|this/balanceValue | tTuple; t
-        ))
-       (=
-         (singleton
-           (mkTuple y)) |amount |; int[amount]
-        )
+       (= (mkTuple x) (|this/balanceValue | |t|))
+       (= (mkTuple y) amount)
        (>= (intValue x) (intValue y))))
-   (= (|this/depositValue | uTuple; t'
-    )
-     (singleton
-       (mkTuple u.9_0)))
-   (= (|this/withdrawalValue | uTuple; t'
-    ) |amount |; int[amount]
-    )
+   (= (|this/depositValue | |t'|) (mkTuple zero))
+   (= (|this/withdrawalValue | |t'|) amount)
    (exists ((z UInt))
      (and
-       (=
-         (singleton
-           (mkTuple z)) (|this/balanceValue | uTuple; t'
-        ))
+       (= (mkTuple z) (|this/balanceValue | |t'|))
        (exists ((x UInt)(y UInt))
          (and
-           (=
-             (- (intValue x) (intValue y)) (intValue z))
-           (=
-             (singleton
-               (mkTuple x)) (|this/balanceValue | tTuple; t
-            ))
-           (=
-             (singleton
-               (mkTuple y)) |amount |; int[amount]
-            )))))))
-(define-fun |this/init | ((tTuple (Set (Tuple UInt)))) Bool
+           (= (- (intValue x) (intValue y)) (intValue z))
+           (= (mkTuple x) (|this/balanceValue | |t|))
+           (= (mkTuple y) amount)))))))
 
+(define-fun |this/init | ((|t| (Tuple UInt))) Bool
  (and
    (=
      (join
        (join |this/BankAccount |; this/BankAccount
          |this/BankAccount/deposit |; (this/BankAccount <: deposit)
-        ) tTuple; t
+        ) (singleton |t|); t
       )
      (singleton
-       (mkTuple u.9_0)))
+       (mkTuple zero)))
    (=
      (join
        (join |this/BankAccount |; this/BankAccount
          |this/BankAccount/withdrawal |; (this/BankAccount <: withdrawal)
-        ) tTuple; t
+        ) (singleton |t|); t
       )
      (singleton
-       (mkTuple u.9_0)))
+       (mkTuple zero)))
    (=
      (join
        (join |this/BankAccount |; this/BankAccount
          |this/BankAccount/balance |; (this/BankAccount <: balance)
-        ) tTuple; t
+        ) (singleton |t|); t
       )
      (singleton
-       (mkTuple u.9_0)))))
-(define-fun |this/someTransaction | ((tTuple (Set (Tuple UInt)))(uTuple (Set (Tuple UInt)))) Bool
+       (mkTuple zero)))))
 
- (exists ((u.40 UInt))
-   (let (
-    (|amount |
-     (mkTuple u.40)))
+(define-fun |this/someTransaction | ((|t| (Tuple UInt))(|t'| (Tuple UInt))) Bool
+
+ (exists ((x UInt))
+   (let ((amount    (mkTuple x)))
      (and
-       (member |amount | univInt; Int
-        )
-       (or (|this/deposit | tTuple; t
-         uTuple; t'
+        (member amount univInt)
+        (or
+            (|this/deposit | |t|  |t'| amount))
+            (|this/withdraw | |t| |t'| amount)))))
 
-         (singleton |amount |)) (|this/withdraw | tTuple; t
-         uTuple; t'
-
-         (singleton |amount |)))))))
 (define-fun |this/system | () Bool
-
- (and (|this/init |
-   (singleton
-     (mkTuple u.9_0)))
-   (forall ((u.41 UInt))
-     (let (
-      (uTuple
-       (mkTuple u.41)))
-       (=>
-         (member uTuple
-           (setminus |this/Time |; this/Time
-
-             (singleton
-               (mkTuple u.9_0))))
-         (exists ((s.19 (Set (Tuple UInt))))
-           (and
-             (forall ((z UInt))
-               (=>
-                 (member
-                   (mkTuple z) s.19; integer/minus[t', Int[1]]
-                  )
-                 (exists ((x UInt)(y UInt))
-                   (and
-                     (=
-                       (- (intValue x) (intValue y)) (intValue z))
-                     (member
-                       (mkTuple x)
-                       (singleton uTuple))
-                     (member
-                       (mkTuple y)
-                       (singleton
-                         (mkTuple u.11_1)))))))
-             (forall ((x UInt)(y UInt))
-               (=>
-                 (and
-                   (member
-                     (mkTuple x)
-                     (singleton uTuple))
-                   (member
-                     (mkTuple y)
-                     (singleton
-                       (mkTuple u.11_1))))
-                 (exists ((z UInt))
-                   (and
-                     (=
-                       (- (intValue x) (intValue y)) (intValue z))
-                     (member
-                       (mkTuple z) s.19; integer/minus[t', Int[1]]
-                      )))))
-             (let (
-              (tTuple s.19; integer/minus[t', Int[1]]
-              )) (|this/someTransaction | tTuple; t
-
-               (singleton uTuple))))))))))
-(declare-fun u.20_10 () UInt)
-(declare-fun u.21_2 () UInt)
-(declare-fun u.22_40 () UInt)
-(declare-fun u.23_3 () UInt)
-(declare-fun u.24_30 () UInt)
-(define-fun |this/run$2 | () Bool
-
- (and (|this/init |
-   (singleton
-     (mkTuple u.9_0))) (|this/deposit |
-   (singleton
-     (mkTuple u.9_0))
-   (singleton
-     (mkTuple u.11_1))
-   (singleton
-     (mkTuple u.20_10))) (|this/deposit |
-   (singleton
-     (mkTuple u.11_1))
-   (singleton
-     (mkTuple u.21_2))
-   (singleton
-     (mkTuple u.22_40))) (|this/withdraw |
-   (singleton
-     (mkTuple u.21_2))
-   (singleton
-     (mkTuple u.23_3))
-   (singleton
-     (mkTuple u.24_30)))))
-(declare-fun u.25_50 () UInt)
-(define-fun |this/run$3 | () Bool
-
- (and |this/system |
-   (= (|this/balanceValue |
-     (singleton
-       (mkTuple u.21_2)))
-     (singleton
-       (mkTuple u.25_50)))))
-(define-fun |this/nonNegative | ((tTuple (Set (Tuple UInt)))) Bool
-
  (and
-   (exists ((x UInt)(y UInt))
-     (and
-       (=
-         (singleton
-           (mkTuple x)) (|this/depositValue | tTuple; t
-        ))
-       (=
-         (singleton
-           (mkTuple y))
-         (singleton
-           (mkTuple u.9_0)))
-       (>= (intValue x) (intValue y))))
-   (exists ((x UInt)(y UInt))
-     (and
-       (=
-         (singleton
-           (mkTuple x)) (|this/withdrawalValue | tTuple; t
-        ))
-       (=
-         (singleton
-           (mkTuple y))
-         (singleton
-           (mkTuple u.9_0)))
-       (>= (intValue x) (intValue y))))
-   (exists ((x UInt)(y UInt))
-     (and
-       (=
-         (singleton
-           (mkTuple x)) (|this/balanceValue | tTuple; t
-        ))
-       (=
-         (singleton
-           (mkTuple y))
-         (singleton
-           (mkTuple u.9_0)))
-       (>= (intValue x) (intValue y))))))
+    (|this/init | (mkTuple zero))
+    (forall ((u UInt))
+     (let ((|t'| (mkTuple u)))
+       (=>
+         (and
+            (member |t'| |this/Time |)
+            (not (= |t'| (mkTuple zero))))
+         (exists ((t UInt))
+            (and
+                (= (- (intValue u) (intValue one)) (intValue t))
+                (|this/someTransaction | (mkTuple t) |t'|))))))))
+
 
 ; one this/BankAccount
 (assert
  (= |this/BankAccount |; this/BankAccount
 
    (singleton
-     (mkTuple a.1))))
+     (mkTuple accountAtom))))
 
 ; atomUniv is the union of top level signatures
 (assert
@@ -467,90 +286,33 @@
 
 ; constant integer
 (assert
- (= (intValue u.9_0) 0))
+ (= (intValue zero) 0))
 
-; positive
+; nonNegative
 (assert
- (forall ((u.54 UInt))
-   (let (
-    (tTuple
-     (mkTuple u.54)))
+ (forall ((t UInt))
      (=>
-       (member tTuple |this/Time |; this/Time
-        )
-       (exists ((x UInt)(y UInt))
-         (and
-           (=
-             (singleton
-               (mkTuple x))
-             (singleton tTuple))
-           (=
-             (singleton
-               (mkTuple y))
-             (singleton
-               (mkTuple u.9_0)))
-           (>= (intValue x) (intValue y))))))))
+       (member (mkTuple t) |this/Time |)
+       (>= (intValue t) (intValue zero)))))
 
 ; constant integer
-(assert
- (= (intValue u.11_1) 1))
+(assert (= (intValue one) 1))
 
-; noGaps
+; noGaps {all t: Time - 0 | minus[t,1] in Time }
 (assert
  (forall ((u.55 UInt))
-   (let (
-    (tTuple
-     (mkTuple u.55)))
+   (let ((|t| (mkTuple u.55)))
      (=>
-       (member tTuple
-         (setminus |this/Time |; this/Time
-
-           (singleton
-             (mkTuple u.9_0))))
-       (exists ((s.12 (Set (Tuple UInt))))
+       (and
+        (member |t| |this/Time |)
+        (not (= u.55 zero)))
+       (exists ((z UInt))
          (and
-           (forall ((z UInt))
-             (=>
-               (member
-                 (mkTuple z) s.12; integer/minus[t, Int[1]]
-                )
-               (exists ((x UInt)(y UInt))
-                 (and
-                   (=
-                     (- (intValue x) (intValue y)) (intValue z))
-                   (member
-                     (mkTuple x)
-                     (singleton tTuple))
-                   (member
-                     (mkTuple y)
-                     (singleton
-                       (mkTuple u.11_1)))))))
-           (forall ((x UInt)(y UInt))
-             (=>
-               (and
-                 (member
-                   (mkTuple x)
-                   (singleton tTuple))
-                 (member
-                   (mkTuple y)
-                   (singleton
-                     (mkTuple u.11_1))))
-               (exists ((z UInt))
-                 (and
-                   (=
-                     (- (intValue x) (intValue y)) (intValue z))
-                   (member
-                     (mkTuple z) s.12; integer/minus[t, Int[1]]
-                    )))))
-           (subset s.12; integer/minus[t, Int[1]]
-             |this/Time |; this/Time
-            )))))))
+            (= (- (intValue u.55) (intValue one)) (intValue z))
+            (member (mkTuple z) |this/Time |)))))))
 
 ; universe
-(assert
- (= |integer/univInt |; integer/univInt
-   univInt; Int
-  ))
+(assert (= |integer/univInt | univInt))
 
 ; identity
 (assert
@@ -594,11 +356,11 @@
 
 ; Identity relation definition for idenAtom
 (assert
- (forall ((a.1 Atom)(a.2 Atom))
+ (forall ((accountAtom Atom)(a.2 Atom))
    (=
      (member
-       (mkTuple a.1 a.2) idenAtom)
-     (= a.1 a.2))))
+       (mkTuple accountAtom a.2) idenAtom)
+     (= accountAtom a.2))))
 
 ; Identity relation definition for idenInt
 (assert
@@ -620,77 +382,37 @@
 
 ; constant integer
 (assert
- (= (intValue u.20_10) 10))
-
-; constant integer
-(assert
- (= (intValue u.21_2) 2))
-
-; constant integer
-(assert
- (= (intValue u.22_40) 40))
-
-; constant integer
-(assert
- (= (intValue u.23_3) 3))
-
-; constant integer
-(assert
- (= (intValue u.24_30) 30))
-
-; constant integer
-(assert
- (= (intValue u.25_50) 50))
-
-(declare-fun zero () UInt)
-(declare-fun u.29_1 () UInt)
-
-; constant integer
-(assert
  (= (intValue zero) 0))
 
-; constant integer
-(assert
- (= (intValue u.29_1) 1))
+; assert sanity
+; {
+;     all  t': Time - 0, a : univInt |
+;     let t = minus[t',1] | -- t' = t + 1
+;     {
+;         withdraw[t, t', a]
+;         implies
+;         balanceValue[t'] < balanceValue[t]
+;     }
+; }
 
-
-
-; ! (all t',a | (let t= integer/minus[t', Int[1]] | this/withdraw[t, t', a] => int[this/balanceValue[t']] < int[this/balanceValue[t]]))
 (assert
  (not
-   (forall ((u UInt)(a UInt))
-     (let (
-      (uTuple
-       (mkTuple u))
-      (aTuple
-       (mkTuple a)))
+   (forall ((|t'| UInt)(|a| UInt))
        (=>
          (and
-           (member uTuple |this/Time |)
-           (not (= u zero)))
-
-         (exists ((t UInt))
-            (and
-                (= (- (intValue u) (intValue u.29_1)) (intValue t))
-             (let (
-              (tTuple (singleton (mkTuple t)); integer/minus[t', Int[1]]
-              ))
-               (=> (|this/withdraw | tTuple; t
-
-                 (singleton uTuple)
-                 (singleton aTuple))
+           (member (mkTuple |t'|) |this/Time |)
+           (not (= |t'| zero))
+           (member (mkTuple |a|) |integer/univInt |))
+         (exists ((|t| UInt)) ; t = minus[t',1]
+           (and
+              (= (- (intValue |t'|) (intValue one)) (intValue |t|))
+              (=>
+                (|this/withdraw | (mkTuple |t|) (mkTuple |t'|) (mkTuple |a|))
                  (exists ((x UInt)(y UInt))
                    (and
-                     (=
-                       (singleton
-                         (mkTuple x)) (|this/balanceValue |
-                       (singleton uTuple)))
-                     (=
-                       (singleton
-                         (mkTuple y)) (|this/balanceValue | tTuple; t
-                      ))
-                     (< (intValue x) (intValue y)))))))))))))
-
-
+                     (= (mkTuple x) (|this/balanceValue | (mkTuple |t'|)))
+                     (= (mkTuple y) (|this/balanceValue | (mkTuple |t| )))
+                     (< (intValue x) (intValue y)))))))))))
 (check-sat)
 (get-model)
+
