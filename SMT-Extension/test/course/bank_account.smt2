@@ -408,11 +408,8 @@
               (= (- (intValue |t'|) (intValue one)) (intValue |t|))
               (=>
                 (|this/withdraw | (mkTuple |t|) (mkTuple |t'|) (mkTuple |a|))
-                 (exists ((x UInt)(y UInt))
-                   (and
-                     (= (mkTuple x) (|this/balanceValue | (mkTuple |t'|)))
-                     (= (mkTuple y) (|this/balanceValue | (mkTuple |t| )))
-                     (< (intValue x) (intValue y)))))))))))
+                 (<
+                    (intValue ((_ tupSel 0) (|this/balanceValue | (mkTuple |t'|))))
+                    (intValue ((_ tupSel 0) (|this/balanceValue | (mkTuple |t| ))))))))))))
 (check-sat)
-(get-model)
 
