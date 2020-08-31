@@ -60,3 +60,8 @@ Initially I defined `(declare-fun plus ((A (Set (Tuple UInt))) (B (Set (Tuple UI
 and added assertions for the addition operation. However, this function is too general, and I only need the result 
 of `plus[A, B]`. 
 So I modified the code to generate an existential quantifier `exists C = { z \| ∃ x ∈ A, y ∈ B. x + y = z }`.
+
+
+For comparison we may need to change the semantics so that for non-singular sets, the output is nondeterministic. 
+For example `{2} > {1, 3}` is `false` in our written semantics, but with `choose` operator, `{2} > {1, 3}` is true
+if `1` is chosen, and false if `3` is chosen. 

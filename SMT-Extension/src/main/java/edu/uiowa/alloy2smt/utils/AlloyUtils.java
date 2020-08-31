@@ -299,6 +299,149 @@ public class AlloyUtils
     throw new UnsupportedOperationException();
   }
 
+  public static Expr isSingleton(Expr body, ExprVar oldExpr, Expr newExpr)
+  {
+    if (body instanceof ExprVar)
+    {
+      if (((ExprVar) body).label.equals(oldExpr.label) &&
+          body.type().equals(oldExpr.type()))
+      {
+        return newExpr;
+      }
+      else
+      {
+        return body;
+      }
+    }
+
+    if (body instanceof ExprConstant)
+    {
+      return body;
+    }
+
+    if (body instanceof Sig || body instanceof Sig.Field)
+    {
+      return body;
+    }
+
+    if (body instanceof ExprUnary)
+    {
+      ExprUnary unary = (ExprUnary) body;
+      Expr sub = substituteExpr(unary.sub, oldExpr, newExpr);
+      return unary.op.make(unary.pos, sub);
+    }
+
+    if (body instanceof ExprBinary)
+    {
+      ExprBinary binary = (ExprBinary) body;
+      Expr left = substituteExpr(binary.left, oldExpr, newExpr);
+      Expr right = substituteExpr(binary.right, oldExpr, newExpr);
+      return binary.op.make(binary.pos, binary.closingBracket, left, right);
+    }
+
+    if (body instanceof ExprQt)
+    {
+      ExprQt qt = (ExprQt) body;
+      Expr sub = qt.sub;
+      List<Decl> declList = new ArrayList<>();
+
+      for (Decl decl : qt.decls)
+      {
+        List<ExprVar> variables = new ArrayList<>();
+        for (ExprHasName name : decl.names)
+        {
+          // return the body if the oldExpr is a quantifier
+          if (oldExpr.label.equals(name.label))
+          {
+            return body;
+          }
+
+          // change the quantifier name if newExpr contains a free variable with the same name
+          if (hasFreeVariable((ExprVar) name, newExpr))
+          {
+            ExprVar newName = ExprVar.make(name.pos, TranslatorUtils.getFreshName(null));
+            sub = substituteExpr(sub, (ExprVar) name, newName);
+            variables.add(newName);
+          }
+          else
+          {
+            variables.add((ExprVar) name);
+          }
+        }
+
+        Expr declaredExpr = decl.expr;
+        declaredExpr = substituteExpr(declaredExpr, oldExpr, newExpr);
+
+        Decl newDecl = new Decl(decl.isPrivate, decl.disjoint, decl.disjoint2,
+            variables, declaredExpr);
+        declList.add(newDecl);
+      }
+
+      sub = substituteExpr(sub, oldExpr, newExpr);
+      Expr newQt = qt.op.make(qt.pos, qt.closingBracket, declList, sub);
+      return newQt;
+    }
+
+    if (body instanceof ExprList)
+    {
+      ExprList list = (ExprList) body;
+
+      List<Expr> arguments = new ArrayList<>();
+      for (Expr expr : list.args)
+      {
+        Expr newArgument = substituteExpr(expr, oldExpr, newExpr);
+        arguments.add(newArgument);
+      }
+
+      return ExprList.make(list.pos, list.closingBracket, list.op, arguments);
+    }
+
+    if (body instanceof ExprLet)
+    {
+      // first expand the let body
+
+      ExprLet let = (ExprLet) body;
+
+      Expr letExpanded = substituteExpr(let.sub, let.var, let.expr);
+      Expr newLet = substituteExpr(letExpanded, oldExpr, newExpr);
+      return newLet;
+    }
+
+    if (body instanceof ExprITE)
+    {
+      ExprITE ite = (ExprITE) body;
+      Expr cond = substituteExpr(ite.cond, oldExpr, newExpr);
+      Expr left = substituteExpr(ite.left, oldExpr, newExpr);
+      Expr right = substituteExpr(ite.right, oldExpr, newExpr);
+      return ExprITE.make(ite.pos, cond, left, right);
+    }
+
+    if (body instanceof ExprCall)
+    {
+      ExprCall call = (ExprCall) body;
+
+      Map<ExprVar, Expr> arguments = new HashMap<>();
+
+      for (int i = 0; i < call.args.size(); i++)
+      {
+        Expr newArgument = substituteExpr(call.args.get(i), oldExpr, newExpr);
+        arguments.put(call.fun.get(i), newArgument);
+      }
+
+      // substitute the old arguments in the function body with the new arguments.
+      Expr functionBody = call.fun.getBody();
+      for (Map.Entry<ExprVar, Expr> entry : arguments.entrySet())
+      {
+        functionBody = substituteExpr(functionBody, entry.getKey(), entry.getValue());
+      }
+
+      return functionBody;
+    }
+
+    throw new UnsupportedOperationException();
+  }
+
+
   private static boolean hasFreeVariable(ExprVar variable, Expr expr)
   {
     if (expr instanceof ExprVar)
