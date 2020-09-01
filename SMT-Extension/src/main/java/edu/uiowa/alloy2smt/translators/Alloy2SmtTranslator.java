@@ -19,7 +19,6 @@ import edu.uiowa.alloy2smt.mapping.MappingType;
 import edu.uiowa.alloy2smt.utils.AlloySettings;
 import edu.uiowa.alloy2smt.utils.AlloyUtils;
 import edu.uiowa.smt.AbstractTranslator;
-import edu.uiowa.smt.SmtEnv;
 import edu.uiowa.smt.TranslatorUtils;
 import edu.uiowa.smt.smtAst.*;
 
@@ -35,6 +34,7 @@ public class Alloy2SmtTranslator extends AbstractTranslator
   final List<Command> commands;
 
   final SignatureTranslator signatureTranslator;
+  final FuncTranslator funcTranslator;
   final ExprTranslator exprTranslator;
 
   Map<Sig, Expr> sigFacts;
@@ -54,6 +54,8 @@ public class Alloy2SmtTranslator extends AbstractTranslator
     this.commands = alloyModel.getAllCommands();
 
     this.signatureTranslator = new SignatureTranslator(this);
+    this.exprTranslator = new ExprTranslator(this);
+    this.funcTranslator = new FuncTranslator(this);
     this.comparisonOperations = new HashMap<>();
     this.arithmeticOperations = new HashMap<>();
     this.signaturesMap = new HashMap<>();
@@ -69,8 +71,6 @@ public class Alloy2SmtTranslator extends AbstractTranslator
     this.smtScript.addFunction(uninterpretedIntValue);
 
     this.functionsMap.put(uninterpretedIntValue.getName(), uninterpretedIntValue);
-
-    this.exprTranslator = new ExprTranslator(this);
     this.facts = new ArrayList<>();
   }
 
@@ -86,14 +86,14 @@ public class Alloy2SmtTranslator extends AbstractTranslator
     this.commands = this.alloyModel.getAllCommands();
 
     this.signatureTranslator = new SignatureTranslator(this);
+    this.exprTranslator = new ExprTranslator(this);
+    this.funcTranslator = new FuncTranslator(this);
     this.comparisonOperations = new HashMap<>(translator.comparisonOperations);
     this.arithmeticOperations = new HashMap<>(translator.arithmeticOperations);
     this.signaturesMap = new HashMap<>(translator.signaturesMap);
     this.functionsMap = new HashMap<>(translator.functionsMap);
     this.fieldsMap = new HashMap<>(translator.fieldsMap);
     this.sigFacts = new HashMap<>(translator.sigFacts);
-
-    this.exprTranslator = new ExprTranslator(this);
     this.facts = new ArrayList<>(translator.facts);
   }
 
@@ -106,24 +106,8 @@ public class Alloy2SmtTranslator extends AbstractTranslator
     this.signatureTranslator.translateSigFacts();
     translateFacts();
     translateSpecialAssertions();
-    translateFunctions();
+    this.funcTranslator.translateFunctions();
     return this.smtScript;
-  }
-
-  private void translateFunctions()
-  {
-    for (CompModule module : alloyModel.getAllReachableModules())
-    {
-      if (module.getModelName().contains("util/ordering") ||
-          module.getModelName().contains("util/integer"))
-      {
-        continue;
-      }
-      for (Func func : module.getAllFunc())
-      {
-        getFuncTranslation(func);
-      }
-    }
   }
 
   private void translateSpecialFunctions()
@@ -539,64 +523,5 @@ public class Alloy2SmtTranslator extends AbstractTranslator
       scopeSum = command.overall == -1 ? AlloySettings.defaultScope : command.overall;
     }
     return scopeSum;
-  }
-
-  public FunctionDeclaration getFuncTranslation(Func func)
-  {
-    FunctionDeclaration function;
-    if(functionsMap.containsKey(func.label))
-    {
-      function = functionsMap.get(func.label);
-    }
-    else
-    {
-      function = translateFunc(func);
-    }
-    return function;
-  }
-
-  private FunctionDefinition translateFunc(Func func)
-  {
-    SmtEnv smtEnv = new SmtEnv();
-    List<SmtVariable> arguments = new ArrayList<>();
-    for (Decl decl : func.decls)
-    {
-      List<SmtVariable> variables = exprTranslator.declTranslator.translateDecl(decl, smtEnv);
-      List<SmtVariable> setVariables = convertToSetVariables(variables);
-      arguments.addAll(setVariables);
-    }
-    // add arguments to function environment
-    for (SmtVariable variable : arguments)
-    {
-      smtEnv.put(variable.getName(), variable.getVariable());
-    }
-
-    SmtExpr smtExpr = exprTranslator.translateExpr(func.getBody(), smtEnv);
-
-    FunctionDefinition function = new FunctionDefinition(func.label, arguments, smtExpr.getSort(), smtExpr, true);
-
-    addFunction(function);
-
-    return function;
-  }
-
-  private List<SmtVariable> convertToSetVariables(List<SmtVariable> variables)
-  {
-    List<SmtVariable> setVariables = new ArrayList<>();
-
-    for (SmtVariable variable : variables)
-    {
-      if (variable.getSort() instanceof TupleSort)
-      {
-        Sort sort = new SetSort(variable.getSort());
-        SmtVariable newVariable = new SmtVariable(variable.getName(), sort, variable.isOriginal());
-        setVariables.add(newVariable);
-      }
-      else
-      {
-        setVariables.add(variable);
-      }
-    }
-    return setVariables;
   }
 }

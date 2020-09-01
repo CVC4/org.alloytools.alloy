@@ -13,12 +13,14 @@ import java.util.List;
 public class ExprCallTranslator
 {
   final ExprTranslator exprTranslator;
+  final FuncTranslator funcTranslator;
   final Alloy2SmtTranslator translator;
 
   public ExprCallTranslator(ExprTranslator exprTranslator)
   {
     this.exprTranslator = exprTranslator;
     this.translator = exprTranslator.translator;
+    this.funcTranslator = translator.funcTranslator;
   }
 
   SmtExpr translateExprCall(ExprCall exprCall, SmtEnv smtEnv)
@@ -62,7 +64,7 @@ public class ExprCallTranslator
   {
     Func func = exprCall.fun;
 
-    FunctionDeclaration function = translator.getFuncTranslation(func);
+    FunctionDeclaration function = translator.funcTranslator.getFuncTranslation(func);
 
     List<SmtExpr> arguments = new ArrayList<>();
 
