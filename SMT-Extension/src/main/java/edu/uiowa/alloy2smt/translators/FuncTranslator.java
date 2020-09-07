@@ -63,8 +63,8 @@ public class FuncTranslator
     for (Decl decl : func.decls)
     {
       List<SmtVariable> variables = translator.exprTranslator.declTranslator.translateDecl(decl, smtEnv);
-      List<SmtVariable> setVariables = convertToSetVariables(variables);
-      arguments.addAll(setVariables);
+      // List<SmtVariable> setVariables = convertToSetVariables(variables);
+      arguments.addAll(variables);
     }
     // add arguments to function environment
     for (SmtVariable variable : arguments)

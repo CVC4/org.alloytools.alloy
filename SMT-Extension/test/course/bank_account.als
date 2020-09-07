@@ -8,17 +8,17 @@ one sig BankAccount
     balance: Int one-> Time
 }
 {some deposit and some withdrawal and some balance}
-fun depositValue[t: Time]: Int {BankAccount.deposit.t}
-fun withdrawalValue[t: Time]: Int {BankAccount.withdrawal.t}
-fun balanceValue[t: Time]: Int {BankAccount.balance.t}
-pred deposit[t, t' : Time, amount: Int]
+fun depositValue[t: one Time]: Int {BankAccount.deposit.t}
+fun withdrawalValue[t: one Time]: Int {BankAccount.withdrawal.t}
+fun balanceValue[t: one Time]: Int {BankAccount.balance.t}
+pred deposit[t, t' : one Time, amount: one Int]
 {
     amount > 0
     depositValue[t'] = amount
     withdrawalValue[t'] = 0
     balanceValue[t'] = plus[balanceValue[t], amount]
 }
-pred withdraw[t, t' : Time, amount: Int]
+pred withdraw[t, t' : one Time, amount: one Int]
 {
     amount > 0
     balanceValue[t] >= amount -- there is enough balance at t
@@ -39,14 +39,14 @@ assert sanity
 }
 check sanity
 
-pred init [t: Time]
+pred init [t: one Time]
 {
   BankAccount.deposit.t = 0
   BankAccount.withdrawal.t = 0
   BankAccount.balance.t = 0
 }
 
-pred someTransaction[t, t': Time]
+pred someTransaction[t, t': one Time]
 {
   some amount : Int | deposit[t, t', amount] iff not withdraw[t, t', amount]
 }
