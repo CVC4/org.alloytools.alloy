@@ -1284,29 +1284,35 @@ public class ExprBinaryTranslator
     }
   }
 
-  private SmtExpr getComparison(SmtBinaryExpr.Op op, SmtExpr left, SmtExpr right)
+  private SmtExpr getComparison(SmtBinaryExpr.Op op, SmtExpr A, SmtExpr B)
   {
-    SmtVariable x = new SmtVariable("x", AbstractTranslator.uninterpretedInt, false);
-    SmtVariable y = new SmtVariable("y", AbstractTranslator.uninterpretedInt, false);
-    SmtExpr xTuple = new SmtMultiArityExpr(SmtMultiArityExpr.Op.MKTUPLE, x.getVariable());
-    SmtExpr yTuple = new SmtMultiArityExpr(SmtMultiArityExpr.Op.MKTUPLE, y.getVariable());
-    SmtExpr xSingleton = SmtUnaryExpr.Op.SINGLETON.make(xTuple);
-    SmtExpr ySingleton = SmtUnaryExpr.Op.SINGLETON.make(yTuple);
-    SmtExpr xValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, x.getVariable());
-    SmtExpr yValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, y.getVariable());
 
-    SmtExpr relation1EqualsX = SmtBinaryExpr.Op.EQ.make(xSingleton, left);
-    SmtExpr relation2EqualsY = SmtBinaryExpr.Op.EQ.make(ySingleton, right);
-    SmtExpr and1 = SmtMultiArityExpr.Op.AND.make(relation1EqualsX, relation2EqualsY);
+    //
+    // A sort          | B sort           | Translation
+    // -----------------------------------------------------------------------------------------
+    // UInt            | UInt             | (< (intValue A) (intValue B)
+    // Tuple UInt      | Tuple UInt       | (< (intValue ((_ tupSel 0) A) ((_ tupSel 0) B)
+    // Set (Tuple UInt)| Set (Tuple UInt) | (< (intValue (choose ((_ tupSel 0) A)) (choose ((_ tupSel 0) B))
 
-    SmtExpr comparison = op.make(xValue, yValue);
-    SmtExpr and2 = SmtMultiArityExpr.Op.AND.make(and1, comparison);
-    SmtExpr exists = SmtQtExpr.Op.EXISTS.make(and2, Arrays.asList(x, y));
+    A = getUInt(A);
+    B = getUInt(B);
+    SmtExpr aValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, A);
+    SmtExpr bValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, B);
+    SmtExpr smtExpr = op.make(aValue, bValue);
+    return smtExpr;
+  }
 
-    //ToDo: remove these 2 lines
-//        Assertion assertion = new Assertion(left + " " + op + " " + right , exists);
-//        exprTranslator.translator.smtProgram.addAssertion(assertion);
-    return exists;
+  private SmtExpr getUInt(SmtExpr smtExpr)
+  {
+    if(smtExpr.getSort() instanceof SetSort)
+    {
+      return smtExpr.choose().tupSel(0);
+    }
+    if (smtExpr.getSort() instanceof TupleSort)
+    {
+      return smtExpr.tupSel(0);
+    }
+    return smtExpr;
   }
 
   private SmtExpr translateEqComparison(ExprBinary expr, SmtBinaryExpr.Op op, SmtEnv smtEnv)
@@ -1699,8 +1705,27 @@ public class ExprBinaryTranslator
   {
     SmtExpr A = exprTranslator.translateExpr(expr.left, smtEnv);
     SmtExpr B = exprTranslator.translateExpr(expr.right, smtEnv);
-    A = convertIntConstantToSet(A);
 
+    if (translator.alloySettings.integerSingletonsOnly)
+    {
+      // Result = (singleton (mkTuple z))
+      // where intValue z  = (op (intValue A) (intValue B)
+
+      SmtExpr aExpr = getUInt(A);
+      SmtExpr bExpr = getUInt(B);
+
+      SmtVariable z  = new SmtVariable("z", AbstractTranslator.uninterpretedInt, false);
+      SmtExpr aValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, aExpr);
+      SmtExpr bValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, bExpr);
+      SmtExpr zValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, z.getVariable());
+
+      SmtExpr equal = op.make(aValue, bValue).eq(zValue);
+      z.setConstraint(equal);
+      smtEnv.addAuxiliaryVariable(z);
+      return z.getVariable();
+    }
+
+    A = convertIntConstantToSet(A);
     B = convertIntConstantToSet(B);
 
     if (A.getSort().equals(AbstractTranslator.setOfIntSortTuple))
@@ -1729,22 +1754,6 @@ public class ExprBinaryTranslator
 
     SmtExpr xyOperation = op.make(xValue, yValue);
     SmtExpr equal = SmtBinaryExpr.Op.EQ.make(xyOperation, zValue);
-
-    //ToDo: refactor this into optimization
-//    if (translator.alloySettings.integerSingletonsOnly)
-//    {
-//      // A= {x}, B = {y} => Result = {z} where z = (x operation y)
-//      SmtExpr xSingleton = SmtUnaryExpr.Op.SINGLETON.make(xTuple);
-//      SmtExpr ySingleton = SmtUnaryExpr.Op.SINGLETON.make(yTuple);
-//      SmtExpr singletonA = SmtBinaryExpr.Op.EQ.make(A, xSingleton);
-//      SmtExpr singletonB = SmtBinaryExpr.Op.EQ.make(B, ySingleton);
-//
-//      SmtExpr and = SmtMultiArityExpr.Op.AND.make(equal, singletonA, singletonB);
-//
-//      SmtQtExpr exists = SmtQtExpr.Op.EXISTS.make(and, x, y, z);
-//      smtEnv.addAuxiliaryFormula(exists);
-//      return z.getVariable();
-//    }
 
     SmtVariable result = new SmtVariable(freshName, AbstractTranslator.setOfUninterpretedIntTuple, false);
     SmtExpr resultSmtExpr = result.getVariable();

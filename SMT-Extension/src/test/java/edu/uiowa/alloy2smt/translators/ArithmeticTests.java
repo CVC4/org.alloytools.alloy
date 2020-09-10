@@ -122,7 +122,7 @@ public class ArithmeticTests
   public void unsatPlusMinus() throws Exception
   {
     String alloy =
-        "sig a, b, c, d in Int {}\n" +
+        "one sig a, b, c, d in Int {}\n" +
             "fact add{plus[a,b] = c + d}\n" +
             "fact subtract{minus[a,b] = c - d}\n" +
             "fact notEqual{a != c and b != d}\n" +
@@ -167,7 +167,7 @@ public class ArithmeticTests
   @Test
   public void GT() throws Exception
   {
-    String alloy = "sig a in Int {} fact {a > 2}";
+    String alloy = "one sig a in Int {} fact {a > 2}";
 
     List<CommandResult> commandResults = AlloyUtils.runAlloyString(alloy, false);
     assertTrue(commandResults.size() == 1);
@@ -190,7 +190,7 @@ public class ArithmeticTests
   @Test
   public void NotABug() throws Exception
   {
-    String alloy = "sig A in Int {}\n" +
+    String alloy = "one sig A in Int {}\n" +
         "fact {A > 20 and #A  = 2}";
     List<CommandResult> commandResults = AlloyUtils.runAlloyString(alloy, false);
     assertTrue(commandResults.size() == 1);
@@ -283,5 +283,17 @@ public class ArithmeticTests
     FunctionDefinition b = AlloyUtils.getFunctionDefinition(commandResults.get(0), "this/B");
     Set<Integer> setB = TranslatorUtils.getIntSet(b);
     assertEquals(new HashSet<>(Arrays.asList(3)), setB);
+  }
+
+  @Test
+  public void test() throws Exception
+  {
+    String alloy =  "sig A {}" +
+        "run a1 {#A >= 0} " +
+        "run a2 {#A > 1}" +
+        "run a3 {#A > 2}" ;
+    List<CommandResult> commandResults = AlloyUtils.runAlloyString(alloy, false);
+    assertTrue(commandResults.size() == 1);
+
   }
 }

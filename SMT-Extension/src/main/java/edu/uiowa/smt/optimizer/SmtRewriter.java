@@ -4,6 +4,7 @@ import edu.uiowa.alloy2smt.utils.AlloyUtils;
 import edu.uiowa.smt.AbstractTranslator;
 import edu.uiowa.smt.TranslatorUtils;
 import edu.uiowa.smt.smtAst.*;
+import kodkod.instance.TupleSet;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -266,6 +267,48 @@ public class SmtRewriter implements ISmtRewriter
   {
     SmtRewriteResult resultA = visit(expr.getA());
     SmtRewriteResult resultB = visit(expr.getB());
+    // ((_ tupSel 0) (mkTuple x))
+    // is optimized into
+    // x
+    if(expr.getOp() == SmtBinaryExpr.Op.TUPSEL &&
+        resultA.smtAst.equals(IntConstant.getInstance(0)) &&
+        resultB.smtAst instanceof SmtMultiArityExpr &&
+        ((SmtMultiArityExpr) resultB.smtAst).getOp() == SmtMultiArityExpr.Op.MKTUPLE &&
+        ((SmtMultiArityExpr) resultB.smtAst).getExprs().size() == 1
+    )
+    {
+      SmtExpr smtExpr = ((SmtMultiArityExpr) resultB.smtAst).get(0);
+      return SmtRewriteResult.Status.RewriteAgain.make(smtExpr);
+    }
+
+    // (= (singleton x) (singleton y))
+    // is optimized into
+    // (= x y)
+    if(expr.getOp() == SmtBinaryExpr.Op.EQ &&
+        resultA.smtAst instanceof SmtUnaryExpr &&
+        ((SmtUnaryExpr) resultA.smtAst).getOp() == SmtUnaryExpr.Op.SINGLETON &&
+        resultB.smtAst instanceof SmtUnaryExpr &&
+        ((SmtUnaryExpr) resultB.smtAst).getOp() == SmtUnaryExpr.Op.SINGLETON)
+    {
+      SmtExpr smtExpr = ((SmtUnaryExpr) resultA.smtAst).getExpr().eq(((SmtUnaryExpr) resultB.smtAst).getExpr());
+      return SmtRewriteResult.Status.RewriteAgain.make(smtExpr);
+    }
+
+    // (= (mkTuple x) (mkTuple y))
+    // is optimized into
+    // (= x y)
+    if(expr.getOp() == SmtBinaryExpr.Op.EQ &&
+        resultA.smtAst instanceof SmtMultiArityExpr &&
+        ((SmtMultiArityExpr) resultA.smtAst).getOp() == SmtMultiArityExpr.Op.MKTUPLE &&
+        ((SmtMultiArityExpr) resultA.smtAst).getExprs().size() == 1 &&
+        resultB.smtAst instanceof SmtMultiArityExpr &&
+        ((SmtMultiArityExpr) resultB.smtAst).getOp() == SmtMultiArityExpr.Op.MKTUPLE &&
+        ((SmtMultiArityExpr) resultB.smtAst).getExprs().size() == 1)
+    {
+      SmtExpr smtExpr = ((SmtMultiArityExpr) resultA.smtAst).get(0).eq(((SmtMultiArityExpr) resultB.smtAst).get(0));
+      return SmtRewriteResult.Status.RewriteAgain.make(smtExpr);
+    }
+
     SmtExpr smtAst = expr.getOp().make((SmtExpr) resultA.smtAst, (SmtExpr) resultB.smtAst);
     if (resultA.status == SmtRewriteResult.Status.Done ||
         resultB.status == SmtRewriteResult.Status.Done)
@@ -611,6 +654,13 @@ public class SmtRewriter implements ISmtRewriter
   public SmtRewriteResult visit(SmtUnaryExpr expr)
   {
     SmtRewriteResult result = visit(expr.getExpr());
+
+    if(expr.getOp() == SmtUnaryExpr.Op.CHOOSE &&
+      result.smtAst instanceof SmtUnaryExpr &&
+        ((SmtUnaryExpr) result.smtAst).getOp() == SmtUnaryExpr.Op.SINGLETON)
+    {
+      return SmtRewriteResult.Status.RewriteAgain.make(((SmtUnaryExpr) result.smtAst).getExpr());
+    }
 
     SmtExpr smtAst = expr.getOp().make((SmtExpr) result.smtAst);
     return result.status.make(smtAst);

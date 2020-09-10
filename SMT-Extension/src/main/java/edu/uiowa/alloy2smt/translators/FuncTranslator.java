@@ -9,6 +9,7 @@
 package edu.uiowa.alloy2smt.translators;
 
 import edu.mit.csail.sdg.ast.Decl;
+import edu.mit.csail.sdg.ast.ExprUnary;
 import edu.mit.csail.sdg.ast.Func;
 import edu.mit.csail.sdg.parser.CompModule;
 import edu.uiowa.smt.SmtEnv;
@@ -73,6 +74,17 @@ public class FuncTranslator
     }
 
     SmtExpr smtExpr = translator.exprTranslator.translateExpr(func.getBody(), smtEnv);
+
+    // if the return type has multiplicity one
+    if(!func.isPred &&
+        func.returnDecl instanceof ExprUnary &&
+        ((ExprUnary) func.returnDecl).op == ExprUnary.Op.ONEOF &&
+        smtExpr.getSort() instanceof SetSort
+    )
+    {
+      // use the choose expr
+      smtExpr = smtExpr.choose();
+    }
 
     FunctionDefinition function = new FunctionDefinition(func.label, arguments, smtExpr.getSort(), smtExpr, true);
 

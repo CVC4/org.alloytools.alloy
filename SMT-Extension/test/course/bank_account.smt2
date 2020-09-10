@@ -22,6 +22,33 @@
 (declare-fun |this/BankAccount/balance | () (Set (Tuple Atom UInt UInt)))
 (declare-fun zero () UInt)
 (declare-fun one () UInt)
+(define-fun |this/init | ((|t| (Tuple UInt))) Bool
+ (and
+   (=
+     (join
+       (join |this/BankAccount |; this/BankAccount
+         |this/BankAccount/deposit |; (this/BankAccount <: deposit)
+        ) (singleton |t|); t
+      )
+     (singleton
+       (mkTuple zero)))
+   (=
+     (join
+       (join |this/BankAccount |; this/BankAccount
+         |this/BankAccount/withdrawal |; (this/BankAccount <: withdrawal)
+        ) (singleton |t|); t
+      )
+     (singleton
+       (mkTuple zero)))
+   (=
+     (join
+       (join |this/BankAccount |; this/BankAccount
+         |this/BankAccount/balance |; (this/BankAccount <: balance)
+        ) (singleton |t|); t
+      )
+     (singleton
+       (mkTuple zero)))))
+
 (define-fun |this/depositValue | ((|t| (Tuple UInt))) (Tuple UInt)
  (choose
  (join
@@ -76,32 +103,6 @@
            (= (mkTuple x) (|this/balanceValue | |t|))
            (= (mkTuple y) amount)))))))
 
-(define-fun |this/init | ((|t| (Tuple UInt))) Bool
- (and
-   (=
-     (join
-       (join |this/BankAccount |; this/BankAccount
-         |this/BankAccount/deposit |; (this/BankAccount <: deposit)
-        ) (singleton |t|); t
-      )
-     (singleton
-       (mkTuple zero)))
-   (=
-     (join
-       (join |this/BankAccount |; this/BankAccount
-         |this/BankAccount/withdrawal |; (this/BankAccount <: withdrawal)
-        ) (singleton |t|); t
-      )
-     (singleton
-       (mkTuple zero)))
-   (=
-     (join
-       (join |this/BankAccount |; this/BankAccount
-         |this/BankAccount/balance |; (this/BankAccount <: balance)
-        ) (singleton |t|); t
-      )
-     (singleton
-       (mkTuple zero)))))
 
 (define-fun |this/someTransaction | ((|t| (Tuple UInt))(|t'| (Tuple UInt))) Bool
 
@@ -386,7 +387,6 @@
 (assert
  (= (intValue zero) 0))
 
-(push 1)
 ; assert sanity
 ; {
 ;     all  t': Time - 0, a : univInt |
@@ -415,4 +415,4 @@
                     (intValue ((_ tupSel 0) (|this/balanceValue | (mkTuple |t'|))))
                     (intValue ((_ tupSel 0) (|this/balanceValue | (mkTuple |t| ))))))))))))
 (check-sat)
-(pop 1)
+

@@ -1,6 +1,6 @@
 sig Time in Int {}
 fact nonNegative {all t: Time | t >= 0}
-fact noGaps {all t: Time - 0 | minus[t,1] in Time }
+fact noGaps {all t: Time | t != 0 implies minus[t,1] in Time }
 one sig BankAccount
 {
     deposit: Int one -> Time,
@@ -8,9 +8,9 @@ one sig BankAccount
     balance: Int one-> Time
 }
 {some deposit and some withdrawal and some balance}
-fun depositValue[t: one Time]: Int {BankAccount.deposit.t}
-fun withdrawalValue[t: one Time]: Int {BankAccount.withdrawal.t}
-fun balanceValue[t: one Time]: Int {BankAccount.balance.t}
+fun depositValue[t: one Time]: one Int {BankAccount.deposit.t}
+fun withdrawalValue[t: one Time]: one Int {BankAccount.withdrawal.t}
+fun balanceValue[t: one Time]: one Int {BankAccount.balance.t}
 pred deposit[t, t' : one Time, amount: one Int]
 {
     amount > 0
@@ -29,8 +29,8 @@ pred withdraw[t, t' : one Time, amount: one Int]
 
 assert sanity
 {
-    all  t': Time - 0, a : univInt |
-    let t = minus[t',1] | -- t' = t + 1
+    all  t': Time, a : univInt | t' != 0 implies
+    let t = minus[t',1] |
     {
         withdraw[t, t', a]  
         implies
@@ -55,7 +55,7 @@ pred someTransaction[t, t': one Time]
 pred system
 {
   init[0]
-  all t': Time - 0 |  let t = minus[t',1]  | someTransaction[t, t']
+  all t': Time | t' != 0 implies  let t = minus[t',1]  | someTransaction[t, t']
 }
 
 fact {system}
@@ -67,13 +67,11 @@ run scenario1
   deposit[1, 2, 40]
   withdraw[2, 3, 30]
 } for 7 Int
-
 run scenario2
 {
  system
  balanceValue[2] = 50
 } for 7 Int
-
 pred nonNegative [t: Time]
 {
   depositValue[t] >= 0 and

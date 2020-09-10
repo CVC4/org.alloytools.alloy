@@ -141,4 +141,17 @@ public abstract class SmtExpr extends SmtAst
     smtExprs.addAll(Arrays.asList(exprs));
     return SmtMultiArityExpr.Op.AND.make(smtExprs);
   }
+
+  public SmtExpr choose()
+  {
+    SmtExpr expr = SmtUnaryExpr.Op.CHOOSE.make(this);
+    return expr;
+  }
+
+  public SmtExpr tupSel(int index)
+  {
+    IntConstant indexConstant = IntConstant.getInstance(index);
+    SmtExpr expr = SmtBinaryExpr.Op.TUPSEL.make(indexConstant, this);
+    return expr;
+  }
 }
