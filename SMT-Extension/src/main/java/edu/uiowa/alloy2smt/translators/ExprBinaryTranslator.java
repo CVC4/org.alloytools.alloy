@@ -1294,11 +1294,25 @@ public class ExprBinaryTranslator
     // Tuple UInt      | Tuple UInt       | (< (intValue ((_ tupSel 0) A) ((_ tupSel 0) B)
     // Set (Tuple UInt)| Set (Tuple UInt) | (< (intValue (choose ((_ tupSel 0) A)) (choose ((_ tupSel 0) B))
 
-    A = getUInt(A);
-    B = getUInt(B);
-    SmtExpr aValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, A);
-    SmtExpr bValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, B);
+    SmtExpr a = getUInt(A);
+    SmtExpr b = getUInt(B);
+    SmtExpr aValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, a);
+    SmtExpr bValue = new SmtCallExpr(AbstractTranslator.uninterpretedIntValue, b);
     SmtExpr smtExpr = op.make(aValue, bValue);
+
+    // add is_singleton if one of the operands is a set
+
+    //(and (< (intValue (choose ((_ tupSel 0) A)) (choose ((_ tupSel 0) B))
+    //     (is_singleton A)
+    //     (is_singleton B))
+    if(A.getSort() instanceof SetSort)
+    {
+      smtExpr = smtExpr.and(A.isSingleton());
+    }
+    if(B.getSort() instanceof SetSort)
+    {
+      smtExpr = smtExpr.and(B.isSingleton());
+    }
     return smtExpr;
   }
 

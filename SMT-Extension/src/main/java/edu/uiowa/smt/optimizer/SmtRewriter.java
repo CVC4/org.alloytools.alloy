@@ -655,11 +655,22 @@ public class SmtRewriter implements ISmtRewriter
   {
     SmtRewriteResult result = visit(expr.getExpr());
 
+    // (choose (singleton x))
+    // (x)
     if(expr.getOp() == SmtUnaryExpr.Op.CHOOSE &&
       result.smtAst instanceof SmtUnaryExpr &&
         ((SmtUnaryExpr) result.smtAst).getOp() == SmtUnaryExpr.Op.SINGLETON)
     {
       return SmtRewriteResult.Status.RewriteAgain.make(((SmtUnaryExpr) result.smtAst).getExpr());
+    }
+
+    // (is_singleton (singleton x))
+    // (true)
+    if(expr.getOp() == SmtUnaryExpr.Op.IS_SINGLETON &&
+        result.smtAst instanceof SmtUnaryExpr &&
+        ((SmtUnaryExpr) result.smtAst).getOp() == SmtUnaryExpr.Op.SINGLETON)
+    {
+      return SmtRewriteResult.Status.RewriteAgain.make(BoolConstant.True);
     }
 
     SmtExpr smtAst = expr.getOp().make((SmtExpr) result.smtAst);

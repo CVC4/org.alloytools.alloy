@@ -154,4 +154,10 @@ public abstract class SmtExpr extends SmtAst
     SmtExpr expr = SmtBinaryExpr.Op.TUPSEL.make(indexConstant, this);
     return expr;
   }
+
+  public SmtExpr isSingleton()
+  {
+    SmtExpr expr = SmtUnaryExpr.Op.IS_SINGLETON.make(this);
+    return expr;
+  }
 }

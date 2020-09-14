@@ -78,6 +78,7 @@ public class SmtUnaryExpr extends SmtExpr
       }
       break;
       case CHOOSE:
+      case IS_SINGLETON:
       {
         if (!(expr.getSort() instanceof SetSort))
         {
@@ -114,6 +115,7 @@ public class SmtUnaryExpr extends SmtExpr
     switch (op)
     {
       case NOT:
+      case IS_SINGLETON:
         return AbstractTranslator.boolSort;
       case COMPLEMENT:
         return expr.getSort();
@@ -216,7 +218,8 @@ public class SmtUnaryExpr extends SmtExpr
     SINGLETON("singleton"),
     CHOOSE("choose"),
     UNIVSET("as univset"),
-    EMPTYSET("as emptyset");
+    EMPTYSET("as emptyset"),
+    IS_SINGLETON("is_singleton");
 
     private final String opStr;
 
@@ -243,6 +246,8 @@ public class SmtUnaryExpr extends SmtExpr
           return UNIVSET;
         case "as emptyset":
           return EMPTYSET;
+        case "is_singleton":
+          return IS_SINGLETON;
         default:
           throw new UnsupportedOperationException("Operator " + operator + " is not defined");
       }
