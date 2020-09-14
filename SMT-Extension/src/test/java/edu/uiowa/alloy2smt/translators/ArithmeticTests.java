@@ -293,7 +293,5 @@ public class ArithmeticTests
         "run a2 {#A > 1}" +
         "run a3 {#A > 2}" ;
     List<CommandResult> commandResults = AlloyUtils.runAlloyString(alloy, false);
-    assertTrue(commandResults.size() == 1);
-
   }
 }
