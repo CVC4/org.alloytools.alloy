@@ -14,7 +14,7 @@ public class SmtSettings extends SmtAst
 
   public static final SmtSettings Default = new SmtSettings();
 
-  public static final String TLIMIT = "tlimit";
+  public static final String TLIMIT_PER = "tlimit-per";
   public static final String PRODUCE_UNSAT_CORES = "produce-unsat-cores";
   public static final String FINITE_MODEL_FIND = "finite-model-find";
 

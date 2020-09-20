@@ -13,7 +13,7 @@ public class AlloySettings extends SmtSettings
   protected AlloySettings()
   {
     super();
-    putSolverOption(TLIMIT, Integer.toString(defaultTimeout));
+    putSolverOption(TLIMIT_PER, Integer.toString(defaultTimeout));
     includeCommandScope = false;
     integerSingletonsOnly = true;
   }

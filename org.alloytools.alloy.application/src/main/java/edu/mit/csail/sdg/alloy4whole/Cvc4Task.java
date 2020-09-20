@@ -759,7 +759,7 @@ public class Cvc4Task implements WorkerEngine.WorkerTask
     public static void setAlloySettings()
     {
         // (set-option :tlimit 30000)
-        alloySettings.putSolverOption(SmtSettings.TLIMIT, Cvc4Timeout.get().toString());
+        alloySettings.putSolverOption(SmtSettings.TLIMIT_PER, Cvc4Timeout.get().toString());
         //(set-option :produce-unsat-cores false)
         alloySettings.putSolverOption(SmtSettings.PRODUCE_UNSAT_CORES, Cvc4ProduceUnsatCores.get().toString());
         //(set-option :finite-model-find false)
