@@ -38,6 +38,10 @@ public class FuncTranslator
       }
       for (Func func : module.getAllFunc())
       {
+        if(func.label.startsWith("run$"))
+        {
+          continue;
+        }
         getFuncTranslation(func);
       }
     }

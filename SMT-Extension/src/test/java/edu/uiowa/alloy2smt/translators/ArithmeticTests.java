@@ -285,13 +285,14 @@ public class ArithmeticTests
     assertEquals(new HashSet<>(Arrays.asList(3)), setB);
   }
 
+
+
   @Test
   public void test() throws Exception
   {
-    String alloy =  "sig A {}" +
-        "run a1 {#A >= 0} " +
-        "run a2 {#A > 1}" +
-        "run a3 {#A > 2}" ;
+    String alloy =  "fun f [x: Int] : Int {0}\n" +
+        "fun f [x: Int] : Int {0}\n" +
+        "fun f [x: Int] : Int {0}\n";
     List<CommandResult> commandResults = AlloyUtils.runAlloyString(alloy, false);
   }
 }
