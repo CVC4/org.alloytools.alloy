@@ -40,6 +40,7 @@ public class FuncTranslator
       {
         if(func.label.startsWith("run$"))
         {
+          // ignore command functions
           continue;
         }
         getFuncTranslation(func);
