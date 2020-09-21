@@ -11,10 +11,7 @@ package edu.uiowa.smt;
 import edu.uiowa.smt.smtAst.*;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class AbstractTranslator
@@ -113,8 +110,14 @@ public abstract class AbstractTranslator
   public FunctionDeclaration getUninterpretedIntConstant(IntConstant intConstant)
   {
     BigInteger value = new BigInteger(intConstant.getValue());
-    Map<BigInteger, FunctionDeclaration> integerConstants = smtScript.getIntegerConstants();
-    if (smtScript.getIntegerConstants().containsKey(value))
+    Map<BigInteger, FunctionDeclaration> integerConstants = new HashMap<>();
+    SmtScript currentScript = smtScript;
+    while(currentScript != null)
+    {
+      integerConstants.putAll(currentScript.getIntegerConstants());
+      currentScript = currentScript.getParent();
+    }
+    if (integerConstants.containsKey(value))
     {
       return integerConstants.get(value);
     }
