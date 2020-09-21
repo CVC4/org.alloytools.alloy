@@ -38,7 +38,7 @@ public class FuncTranslator
       }
       for (Func func : module.getAllFunc())
       {
-        if(func.label.startsWith("run$"))
+        if(func.label.contains("run$"))
         {
           // ignore command functions
           continue;
