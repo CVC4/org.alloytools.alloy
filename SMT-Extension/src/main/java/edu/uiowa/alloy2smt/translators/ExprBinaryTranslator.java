@@ -1775,8 +1775,8 @@ public class ExprBinaryTranslator
     // for all z : uninterpretedInt. x in Result implies
     // exists x, y :uninterpretedInt. x in A and y in B and (x, y, z) in operation
 
-    SmtExpr xMember = SmtBinaryExpr.Op.MEMBER.make(xTuple, A);
-    SmtExpr yMember = SmtBinaryExpr.Op.MEMBER.make(yTuple, B);
+    SmtExpr xMember = getMembershipEqualityConstraint(A, x, xTuple);
+    SmtExpr yMember = getMembershipEqualityConstraint(B, y, yTuple);
     SmtExpr zMember = SmtBinaryExpr.Op.MEMBER.make(zTuple, resultSmtExpr);
 
     SmtExpr xyMember = SmtMultiArityExpr.Op.AND.make(xMember, yMember);
@@ -1802,6 +1802,24 @@ public class ExprBinaryTranslator
     smtEnv.addAuxiliaryVariable(result);
 
     return resultSmtExpr;
+  }
+
+  private SmtExpr getMembershipEqualityConstraint(SmtExpr a, SmtVariable x, SmtExpr xTuple)
+  {
+    SmtExpr xMember;
+    if(a.getSort() instanceof SetSort)
+    {
+      xMember = SmtBinaryExpr.Op.MEMBER.make(xTuple, a);
+    }
+    else if(a.getSort() instanceof TupleSort)
+    {
+      xMember = xTuple.eq(a);
+    }
+    else
+    {
+      xMember = x.getVariable().eq(a);
+    }
+    return xMember;
   }
 
   private SmtExpr convertIntConstantToSet(SmtExpr A)

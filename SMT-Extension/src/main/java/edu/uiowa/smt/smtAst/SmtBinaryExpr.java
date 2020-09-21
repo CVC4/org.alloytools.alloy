@@ -98,7 +98,7 @@ public class SmtBinaryExpr extends SmtExpr
 
         if (!(B.getSort() instanceof SetSort))
         {
-          throw new RuntimeException(String.format("The sort of right expression '%1$s' is not a set", B.getSort()));
+          throw new RuntimeException(String.format("The sort '%1$s' of the right expression in '%2$s' is not a set", B.getSort(), this));
         }
 
         SetSort setSort = (SetSort) B.getSort();

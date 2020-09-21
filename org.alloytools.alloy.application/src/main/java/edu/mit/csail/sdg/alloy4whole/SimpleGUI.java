@@ -1414,8 +1414,8 @@ public final class SimpleGUI implements ComponentListener, Listener {
             List<JMenuItem> cvc4BooleanPreferences = addToMenu(optmenu,
                 Cvc4IncludeCommandScope,
                 Cvc4ProduceUnsatCores,
-                Cvc4FiniteModelFind);
-            //, Cvc4IntegerSingletonsOnly
+                Cvc4FiniteModelFind,
+                Cvc4IntegerSingletonsOnly);
 
             if(RelationalSolver.get().equals(KODKOD))
             {
