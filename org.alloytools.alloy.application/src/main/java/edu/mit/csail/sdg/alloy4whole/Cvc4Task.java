@@ -12,6 +12,7 @@ import edu.uiowa.alloy2smt.mapping.MappingType;
 import edu.uiowa.alloy2smt.translators.Translation;
 import edu.uiowa.alloy2smt.utils.AlloySettings;
 import edu.uiowa.alloy2smt.utils.AlloyUnsatCore;
+import edu.uiowa.alloy2smt.utils.AlloyUtils;
 import edu.uiowa.smt.AbstractTranslator;
 import edu.uiowa.smt.parser.SmtModelVisitor;
 import edu.uiowa.smt.parser.antlr.SmtLexer;
@@ -326,7 +327,7 @@ public class Cvc4Task implements WorkerEngine.WorkerTask
 
         Command command = translation.getCommands().get(commandIndex);
 
-        smtModel= showInputDialog(smtModel);
+//        smtModel= showInputDialog(smtModel);
 
         SmtModel model = parseModel(smtModel);
 
@@ -768,6 +769,7 @@ public class Cvc4Task implements WorkerEngine.WorkerTask
         alloySettings.produceUnsatCore = Cvc4ProduceUnsatCores.get();
         alloySettings.finiteModelFinding = Cvc4FiniteModelFind.get();
         alloySettings.integerSingletonsOnly = Cvc4IntegerSingletonsOnly.get();
+        AlloyUtils.alloySettings.integerSingletonsOnly = Cvc4IntegerSingletonsOnly.get();
     }
 
     //ToDo: replace this with a call edu.uiowa.smt.Result.parseModel

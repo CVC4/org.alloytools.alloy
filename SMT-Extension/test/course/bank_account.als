@@ -1,6 +1,8 @@
 sig Time in Int {}
 fact nonNegative {all t: Time | t >= 0}
 fact noGaps {all t: Time | t != 0 implies minus[t,1] in Time }
+
+
 one sig BankAccount
 {
     deposit: Int one -> Time,
@@ -11,6 +13,7 @@ one sig BankAccount
 fun depositValue[t: one Time]: one Int {BankAccount.deposit.t}
 fun withdrawalValue[t: one Time]: one Int {BankAccount.withdrawal.t}
 fun balanceValue[t: one Time]: one Int {BankAccount.balance.t}
+
 pred deposit[t, t' : one Time, amount: one Int]
 {
     amount > 0
@@ -18,6 +21,7 @@ pred deposit[t, t' : one Time, amount: one Int]
     withdrawalValue[t'] = 0
     balanceValue[t'] = plus[balanceValue[t], amount]
 }
+
 pred withdraw[t, t' : one Time, amount: one Int]
 {
     amount > 0

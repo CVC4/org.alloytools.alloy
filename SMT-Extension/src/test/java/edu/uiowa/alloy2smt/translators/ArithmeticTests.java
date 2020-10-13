@@ -295,4 +295,32 @@ public class ArithmeticTests
         "fun f [x: Int] : Int {0}\n";
     List<CommandResult> commandResults = AlloyUtils.runAlloyString(alloy, false);
   }
+
+  @Test
+  public void example1() throws Exception
+  {
+    AlloyUtils.alloySettings.integerSingletonsOnly = false;
+    String alloy =
+            "sig A, B, C in Int {} \n" +
+                    "fact \n" +
+                    "{  \n" +
+                    "  A = 1 + 2 and B = 4 + 5 \n" +
+                    "  C = plus[A, B] \n" +
+                    "}\n" +
+                    "run {} for 6 Int\n";
+    List<CommandResult> commandResults = AlloyUtils.runAlloyString(alloy, false);
+    assertEquals("sat", commandResults.get(0).satResult);
+
+    FunctionDefinition a = AlloyUtils.getFunctionDefinition(commandResults.get(0), "this/A");
+    Set<Integer> setA = TranslatorUtils.getIntSet(a);
+    assertEquals(new HashSet<>(Arrays.asList(1, 2)), setA);
+
+    FunctionDefinition b = AlloyUtils.getFunctionDefinition(commandResults.get(0), "this/B");
+    Set<Integer> setB = TranslatorUtils.getIntSet(b);
+    assertEquals(new HashSet<>(Arrays.asList(4, 5)), setB);
+
+    FunctionDefinition c = AlloyUtils.getFunctionDefinition(commandResults.get(0), "this/C");
+    Set<Integer> setC = TranslatorUtils.getIntSet(c);
+    assertEquals(new HashSet<>(Arrays.asList(5, 6, 7)), setC);
+  }
 }
